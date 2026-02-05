@@ -10,13 +10,13 @@
         h2 { color: #000; letter-spacing: 2px; margin-bottom: 5px; }
         .config-area { background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #ddd; }
         select { width: 100%; padding: 10px; border-radius: 8px; font-size: 16px; margin-top: 5px; border: 2px solid #343a40; }
-        .link-planilha, .link-lista { display: inline-block; margin-top: 12px; color: #007bff; font-weight: bold; text-decoration: underline; font-size: 14px; cursor: pointer; }
+        .link-planilha { display: inline-block; margin-top: 12px; color: #007bff; font-weight: bold; text-decoration: underline; font-size: 14px; cursor: pointer; }
         .btn-lista-codigos { background: #6c757d; color: white; padding: 10px; border-radius: 8px; text-decoration: none; display: block; margin: 10px 0; font-size: 13px; font-weight: bold; }
-        textarea { width: 100%; height: 60px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; }
+        textarea { width: 100%; height: 60px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 14px; }
         .btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         button { padding: 12px; border: 1px solid #ddd; border-radius: 10px; background: #fff; cursor: pointer; font-weight: bold; font-size: 14px; }
         button.active { background: #000; color: #fff; border-color: #000; }
-        .total-panel { background: #343a40; color: #fff; padding: 15px; border-radius: 12px; margin: 15px 0; font-size: 1.2em; font-weight: bold; }
+        .total-panel { background: #343a40; color: #fff; padding: 15px; border-radius: 12px; margin: 10px 0; font-size: 1.2em; font-weight: bold; }
         .copy-btn { background: #007bff; color: white; width: 100%; margin-top: 10px; border: none; font-size: 16px; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .status { padding: 15px; margin: 10px 0; font-weight: bold; border-radius: 12px; border: 2px solid transparent; min-height: 50px; display: flex; align-items: center; justify-content: center; }
         .erro { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
@@ -47,7 +47,7 @@
     
     <a href="https://docs.google.com/spreadsheets/d/1oa72j08CBUpaPS9hBlgBGQFXHI4f6ao6H_vBw8Zotug/edit?gid=0#gid=0" target="_blank" class="btn-lista-codigos">🔗 LINK LISTA CÓDIGOS</a>
     
-    <textarea id="listaSistema" placeholder="Cole a lista do sistema aqui..."></textarea>
+    <textarea id="listaSistema" placeholder="Cole a lista do sistema aqui..." onblur="limparEspacos()"></textarea>
     
     <div class="btn-group">
         <button onclick="setQtd(1, this)" class="active">QTD 1</button>
@@ -98,6 +98,13 @@
         }
     }
 
+    // NOVA FUNÇÃO: Limpa os espaços e linhas vazias assim que você sai da caixa de texto
+    function limparEspacos() {
+        const textarea = document.getElementById('listaSistema');
+        const listaLimpa = textarea.value.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "");
+        textarea.value = listaLimpa.join("\n");
+    }
+
     function ativarAudio() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -135,7 +142,6 @@
     });
 
     function processar(cod) {
-        // Agora o código limpa espaços extras e filtra linhas vazias da lista do sistema
         const listaRaw = document.getElementById('listaSistema').value;
         const lista = listaRaw.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "");
         
@@ -165,7 +171,7 @@
         let t = "";
         dadosContados.forEach(i => { t += `${i.codigo}\t${i.quantidade}\n`; });
         navigator.clipboard.writeText(t).then(() => { 
-            alert("Sucesso! " + somaTotalPecas + " peças copiadas.\nAgora cole na planilha do Contador " + document.getElementById('seletorContador').value); 
+            alert("Sucesso! " + somaTotalPecas + " peças copiadas."); 
         });
     }
 </script>

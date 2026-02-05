@@ -16,7 +16,7 @@
         .btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         button { padding: 12px; border: 1px solid #ddd; border-radius: 10px; background: #fff; cursor: pointer; font-weight: bold; font-size: 14px; }
         button.active { background: #000; color: #fff; border-color: #000; }
-        .total-panel { background: #343a40; color: #fff; padding: 15px; border-radius: 12px; margin: 10px 0; font-size: 1.2em; font-weight: bold; }
+        .total-panel { background: #343a40; color: #fff; padding: 15px; border-radius: 12px; margin: 15px 0; font-size: 1.2em; font-weight: bold; }
         .copy-btn { background: #007bff; color: white; width: 100%; margin-top: 10px; border: none; font-size: 16px; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .status { padding: 15px; margin: 10px 0; font-weight: bold; border-radius: 12px; border: 2px solid transparent; min-height: 50px; display: flex; align-items: center; justify-content: center; }
         .erro { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
@@ -47,7 +47,7 @@
     
     <a href="https://docs.google.com/spreadsheets/d/1oa72j08CBUpaPS9hBlgBGQFXHI4f6ao6H_vBw8Zotug/edit?gid=0#gid=0" target="_blank" class="btn-lista-codigos">🔗 LINK LISTA CÓDIGOS</a>
     
-    <textarea id="listaSistema" placeholder="Cole a lista do sistema aqui..." onblur="limparEspacos()"></textarea>
+    <textarea id="listaSistema" placeholder="Cole a lista do sistema aqui..." oninput="limparAutomatico()"></textarea>
     
     <div class="btn-group">
         <button onclick="setQtd(1, this)" class="active">QTD 1</button>
@@ -98,11 +98,15 @@
         }
     }
 
-    // NOVA FUNÇÃO: Limpa os espaços e linhas vazias assim que você sai da caixa de texto
-    function limparEspacos() {
+    // MELHORIA: Agora ele limpa em tempo real enquanto você cola ou digita
+    function limparAutomatico() {
         const textarea = document.getElementById('listaSistema');
-        const listaLimpa = textarea.value.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "");
-        textarea.value = listaLimpa.join("\n");
+        const originalValue = textarea.value;
+        const cleanedValue = originalValue.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "").join("\n");
+        
+        if (originalValue !== cleanedValue) {
+            textarea.value = cleanedValue;
+        }
     }
 
     function ativarAudio() {
@@ -142,8 +146,9 @@
     });
 
     function processar(cod) {
-        const listaRaw = document.getElementById('listaSistema').value;
-        const lista = listaRaw.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "");
+        const textarea = document.getElementById('listaSistema');
+        // Filtro garantido antes de cada bip
+        const lista = textarea.value.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "");
         
         const q = (qtdAtual === 'manual') ? (parseFloat(document.getElementById('qtdManual').value) || 1) : parseFloat(qtdAtual);
         const display = document.getElementById('displayStatus');

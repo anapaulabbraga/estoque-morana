@@ -30,7 +30,7 @@
         .log-erro { color: #ff0000; font-weight: bold; }
     </style>
 </head>
-<body onload="carregarBackup()" onclick="ativarAudio()">
+<body onload="verificarValidadeEBotarBackup()" onclick="ativarAudio()">
 
 <div class="container">
     <h2>MORANA</h2>
@@ -116,7 +116,6 @@
             const text = await response.text();
             const linhas = text.split(/\r?\n/);
             
-            // Pega a Coluna B (índice 1)
             listaCodigosValidos = linhas.map(linha => {
                 const colunas = linha.split(',');
                 return colunas[1] ? colunas[1].replace(/"/g, '').trim() : null;
@@ -127,6 +126,8 @@
                 msg.style.display = "block";
                 btn.innerText = "✅ DADOS CARREGADOS";
                 localStorage.setItem('backup_lista_morana', JSON.stringify(listaCodigosValidos));
+                // Salva o momento da importação
+                localStorage.setItem('data_criacao_morana', Date.now());
             } else {
                 throw new Error("Lista vazia");
             }
@@ -142,6 +143,24 @@
         localStorage.setItem('backup_total_morana', somaTotalPecas);
         localStorage.setItem('backup_log_morana', document.getElementById('log').innerHTML);
         localStorage.setItem('backup_contador_index', document.getElementById('seletorContador').value);
+        if(!localStorage.getItem('data_criacao_morana')) {
+            localStorage.setItem('data_criacao_morana', Date.now());
+        }
+    }
+
+    function verificarValidadeEBotarBackup() {
+        const dataCriacao = localStorage.getItem('data_criacao_morana');
+        if (dataCriacao) {
+            const doisDiasEmMs = 2 * 24 * 60 * 60 * 1000;
+            const agora = Date.now();
+            
+            if (agora - dataCriacao > doisDiasEmMs) {
+                console.log("Dados expirados (mais de 2 dias). Limpando...");
+                localStorage.clear();
+                return; // Não carrega nada
+            }
+        }
+        carregarBackup();
     }
 
     function carregarBackup() {

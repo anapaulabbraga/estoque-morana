@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contador MORANA - Automático</title>
+    <title>Contador MORANA - Oficial</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 10px; background: #f0f2f5; }
         .container { max-width: 450px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
@@ -29,7 +29,7 @@
         .log-erro { color: #ff0000; font-weight: bold; }
     </style>
 </head>
-<body onload="carregarTudo()" onclick="ativarAudio()">
+<body onload="carregarBackup()" onclick="ativarAudio()">
 
 <div class="container">
     <h2>MORANA</h2>
@@ -82,11 +82,8 @@
     let dadosContados = [];
     let somaTotalPecas = 0;
     let listaCodigosValidos = [];
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT-C__Ol64x9DNuRb11spJhaP30Ci18IDE0xi2cPwno0GOTuSiNsfqwKUO3JwLorLwbl6enS6MPUaM/pub?gid=0&single=true&output=csv";
-
-    function carregarTudo() {
-        carregarBackup();
-    }
+    // Link atualizado para garantir que pegue o CSV correto
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT-C__Ol64x9DNuRb11spJhaP30Ci18IDE0xi2cPwno0GOTuSiNsfqwKUO3JwLorLwbl6enS6MPUaM/pub?output=csv";
 
     async function importarDados() {
         const btn = document.getElementById('btnImportar');
@@ -96,77 +93,65 @@
 
         try {
             const response = await fetch(csvUrl);
-            const data = await response.text();
-            // Limpa o CSV e pega apenas a primeira coluna (códigos)
-            listaCodigosValidos = data.split(/\r?\n/).map(line => line.split(',')[0].trim()).filter(c => c !== "" && c !== "codigo");
+            const text = await response.text();
+            const linhas = text.split(/\r?\n/);
             
-            msg.innerText = `${listaCodigosValidos.length} códigos importados com sucesso!`;
-            msg.style.display = "block";
-            btn.innerText = "✅ DADOS CARREGADOS";
-            localStorage.setItem('backup_lista', JSON.stringify(listaCodigosValidos));
-            document.getElementById('inputBip').focus();
+            // Ajuste para pegar a COLUNA B (índice 1) ignorando o cabeçalho
+            listaCodigosValidos = linhas.map(linha => {
+                const colunas = linha.split(',');
+                return colunas[1] ? colunas[1].replace(/"/g, '').trim() : null;
+            }).filter(c => c && c !== "" && c !== "CÓDIGO" && !isNaN(c));
+
+            if(listaCodigosValidos.length > 0) {
+                msg.innerText = `${listaCodigosValidos.length} códigos importados com sucesso!`;
+                msg.style.display = "block";
+                btn.innerText = "✅ DADOS CARREGADOS";
+                localStorage.setItem('backup_lista_morana', JSON.stringify(listaCodigosValidos));
+            } else {
+                throw new Error("Lista vazia");
+            }
         } catch (error) {
-            alert("Erro ao importar dados. Verifique a conexão.");
+            alert("Erro na importação. Verifique se a planilha está publicada corretamente como CSV.");
             btn.disabled = false;
             btn.innerText = "📥 IMPORTAR DADOS PRÉ INVENTÁRIO";
         }
     }
 
     function salvarBackup() {
-        localStorage.setItem('backup_dados', JSON.stringify(dadosContados));
-        localStorage.setItem('backup_total', somaTotalPecas);
-        localStorage.setItem('backup_log', document.getElementById('log').innerHTML);
-        localStorage.setItem('backup_contador', document.getElementById('seletorContador').value);
+        localStorage.setItem('backup_dados_morana', JSON.stringify(dadosContados));
+        localStorage.setItem('backup_total_morana', somaTotalPecas);
+        localStorage.setItem('backup_log_morana', document.getElementById('log').innerHTML);
     }
 
     function carregarBackup() {
-        const backupDados = localStorage.getItem('backup_dados');
-        const backupLista = localStorage.getItem('backup_lista');
-
+        const backupLista = localStorage.getItem('backup_lista_morana');
         if (backupLista) {
             listaCodigosValidos = JSON.parse(backupLista);
-            const btn = document.getElementById('btnImportar');
-            const msg = document.getElementById('msgSucesso');
-            btn.disabled = true;
-            btn.innerText = "✅ DADOS CARREGADOS";
-            msg.innerText = `${listaCodigosValidos.length} códigos disponíveis no cache.`;
-            msg.style.display = "block";
+            document.getElementById('btnImportar').disabled = true;
+            document.getElementById('btnImportar').innerText = "✅ DADOS CARREGADOS";
+            document.getElementById('msgSucesso').innerText = `${listaCodigosValidos.length} códigos carregados do cache.`;
+            document.getElementById('msgSucesso').style.display = "block";
         }
 
+        const backupDados = localStorage.getItem('backup_dados_morana');
         if (backupDados && JSON.parse(backupDados).length > 0) {
-            if (confirm("Encontrei uma contagem anterior salva. Deseja continuar?")) {
+            if (confirm("Continuar contagem salva?")) {
                 dadosContados = JSON.parse(backupDados);
-                somaTotalPecas = parseFloat(localStorage.getItem('backup_total')) || 0;
+                somaTotalPecas = parseFloat(localStorage.getItem('backup_total_morana')) || 0;
                 document.getElementById('contadorTotal').innerText = somaTotalPecas;
-                document.getElementById('log').innerHTML = localStorage.getItem('backup_log');
-                document.getElementById('seletorContador').value = localStorage.getItem('backup_contador') || "";
-            } else {
-                limparTudo();
+                document.getElementById('log').innerHTML = localStorage.getItem('backup_log_morana');
             }
         }
     }
 
     function limparTudo() {
-        if (confirm("Isso apagará a contagem atual e a lista importada. Tem certeza?")) {
+        if (confirm("Apagar TUDO e começar novo inventário?")) {
             localStorage.clear();
-            dadosContados = [];
-            listaCodigosValidos = [];
-            somaTotalPecas = 0;
-            document.getElementById('contadorTotal').innerText = "0";
-            document.getElementById('log').innerHTML = "<strong>Histórico:</strong><br>";
-            document.getElementById('btnImportar').disabled = false;
-            document.getElementById('btnImportar').innerText = "📥 IMPORTAR DADOS PRÉ INVENTÁRIO";
-            document.getElementById('msgSucesso').style.display = "none";
-            document.getElementById('displayStatus').innerText = "MEMÓRIA LIMPA!";
-            document.getElementById('displayStatus').className = "status";
+            location.reload();
         }
     }
 
-    function ativarAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-    }
+    function ativarAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
     function bipErro() {
         if (!audioCtx) return;
@@ -175,18 +160,15 @@
         osc.type = 'square';
         osc.frequency.setValueAtTime(150, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
     }
 
     function setQtd(v, btn) {
         document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        const manual = document.getElementById('qtdManual');
-        if (v === 'div') { manual.style.display = 'block'; qtdAtual = 'manual'; manual.focus(); }
-        else { manual.style.display = 'none'; qtdAtual = v; document.getElementById('inputBip').focus(); }
+        document.getElementById('qtdManual').style.display = (v === 'div') ? 'block' : 'none';
+        qtdAtual = (v === 'div') ? 'manual' : v;
     }
 
     document.getElementById('inputBip').addEventListener('keypress', (e) => {
@@ -199,26 +181,20 @@
 
     function processar(cod) {
         if (listaCodigosValidos.length === 0) {
-            alert("Por favor, importe os dados do pré-inventário primeiro!");
-            return;
+            alert("Por favor, importe os dados primeiro!"); return;
         }
-
         const q = (qtdAtual === 'manual') ? (parseFloat(document.getElementById('qtdManual').value) || 1) : parseFloat(qtdAtual);
-        const display = document.getElementById('displayStatus');
-        
         dadosContados.push({codigo: cod, quantidade: q});
         somaTotalPecas += q;
         document.getElementById('contadorTotal').innerText = somaTotalPecas;
 
+        const display = document.getElementById('displayStatus');
         if (listaCodigosValidos.includes(cod)) {
-            display.innerText = "OK: " + cod;
-            display.className = "status ok";
+            display.innerText = "OK: " + cod; display.className = "status ok";
             document.getElementById('log').innerHTML += `<span>${cod} | Qtd: ${q}</span><br>`;
         } else {
-            display.innerText = "ERRO: " + cod;
-            display.className = "status erro";
-            bipErro();
-            if (navigator.vibrate) navigator.vibrate(300);
+            display.innerText = "ERRO: " + cod; display.className = "status erro";
+            bipErro(); if (navigator.vibrate) navigator.vibrate(300);
             document.getElementById('log').innerHTML += `<span class="log-erro">${cod} | Qtd: ${q} (ERRO)</span><br>`;
         }
         document.getElementById('log').scrollTop = 99999;
@@ -226,12 +202,8 @@
     }
 
     function copiarTabela() {
-        if (dadosContados.length === 0) { alert("Nada para copiar!"); return; }
-        let t = "";
-        dadosContados.forEach(i => { t += `${i.codigo}\t${i.quantidade}\n`; });
-        navigator.clipboard.writeText(t).then(() => { 
-            alert("Sucesso! " + somaTotalPecas + " peças copiadas para a planilha."); 
-        });
+        let t = ""; dadosContados.forEach(i => { t += `${i.codigo}\t${i.quantidade}\n`; });
+        navigator.clipboard.writeText(t).then(() => { alert("Copiado!"); });
     }
 </script>
 </body>

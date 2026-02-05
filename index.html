@@ -10,6 +10,7 @@
         h2 { color: #000; letter-spacing: 2px; margin-bottom: 5px; }
         .config-area { background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #ddd; }
         select { width: 100%; padding: 10px; border-radius: 8px; font-size: 16px; margin-top: 5px; border: 2px solid #343a40; }
+        .link-planilha { display: inline-block; margin-top: 12px; color: #007bff; font-weight: bold; text-decoration: underline; font-size: 14px; cursor: pointer; }
         .import-section { margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #eee; }
         .btn-importar { background: #28a745; color: white; width: 100%; border: none; font-size: 16px; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .btn-importar:disabled { background: #6c757d; cursor: not-allowed; }
@@ -19,7 +20,7 @@
         button.active { background: #000; color: #fff; border-color: #000; }
         .total-panel { background: #343a40; color: #fff; padding: 15px; border-radius: 12px; margin: 15px 0; font-size: 1.2em; font-weight: bold; }
         .copy-btn { background: #007bff; color: white; width: 100%; margin-top: 10px; border: none; font-size: 16px; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        .clear-btn { background: #dc3545; color: white; width: 100%; margin-top: 5px; border: none; font-size: 12px; padding: 8px; border-radius: 10px; cursor: pointer; opacity: 0.8; }
+        .clear-btn { background: #dc3545; color: white; width: 80%; margin: 10px auto; border: none; font-size: 11px; padding: 6px; border-radius: 8px; cursor: pointer; opacity: 0.7; display: block; }
         .status { padding: 15px; margin: 10px 0; font-weight: bold; border-radius: 12px; border: 2px solid transparent; min-height: 50px; display: flex; align-items: center; justify-content: center; }
         .erro { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
         .ok { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
@@ -40,8 +41,8 @@
     </div>
 
     <div class="config-area">
-        <label><strong>Quem está contando?</strong></label>
-        <select id="seletorContador">
+        <label><strong>Quem está contando agora?</strong></label>
+        <select id="seletorContador" onchange="atualizarLinkPlanilha()">
             <option value="">Selecione o Contador...</option>
             <option value="1">Contador 1</option>
             <option value="2">Contador 2</option>
@@ -49,6 +50,7 @@
             <option value="4">Contador 4</option>
             <option value="5">Contador 5</option>
         </select>
+        <a id="btnPlanilha" class="link-planilha" href="#" target="_blank" style="display:none;">🔗 CLIQUE PARA ABRIR A PLANILHA</a>
     </div>
     
     <div class="btn-group">
@@ -66,14 +68,14 @@
         <input type="text" id="inputBip" placeholder="BIPE O CÓDIGO" autofocus>
     </div>
 
-    <button class="copy-btn" onclick="copiarTabela()">📋 COPIAR PARA PLANILHA</button>
-    <button class="clear-btn" onclick="limparTudo()">🗑️ LIMPAR TUDO / NOVO INVENTÁRIO</button>
-
+    <div id="log"><strong>Histórico de Bips:</strong><br></div>
+    
     <div class="total-panel">
         TOTAL DE PEÇAS: <span id="contadorTotal">0</span>
     </div>
-    
-    <div id="log"><strong>Histórico:</strong><br></div>
+
+    <button class="copy-btn" onclick="copiarTabela()">📋 COPIAR TUDO (PARA PLANILHA)</button>
+    <button class="clear-btn" onclick="limparTudo()">🗑️ LIMPAR TUDO / NOVO INVENTÁRIO</button>
 </div>
 
 <script>
@@ -82,8 +84,26 @@
     let dadosContados = [];
     let somaTotalPecas = 0;
     let listaCodigosValidos = [];
-    // Link atualizado para garantir que pegue o CSV correto
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT-C__Ol64x9DNuRb11spJhaP30Ci18IDE0xi2cPwno0GOTuSiNsfqwKUO3JwLorLwbl6enS6MPUaM/pub?output=csv";
+
+    const linksPlanilhas = {
+        "1": "https://docs.google.com/spreadsheets/d/1tO_fU3TcHGDpGpsU0Mhm3S5YesC60Y9HsRI6KoxzX7E/edit?gid=746473448#gid=746473448",
+        "2": "https://docs.google.com/spreadsheets/d/1JYDSjGJWQsaojPMqoT_2GH7dlzA-lbHKPLX228jF2tA/edit?gid=746473448#gid=746473448",
+        "3": "https://docs.google.com/spreadsheets/d/1KSahZxPv0z7mT6ZpY5emNTdsNtC6eUGcrDa9Dcc0pnY/edit?gid=746473448#gid=746473448",
+        "4": "https://docs.google.com/spreadsheets/d/1sTRNcC3Hi-CepA-alR24f_gOtCg_vswE2hKwSzTeHbU/edit?gid=746473448#gid=746473448",
+        "5": "https://docs.google.com/spreadsheets/d/1eOJN0ZwJ8qwfmIG-G3S7tB8sY_rGtLqclIYWlzXOblo/edit?gid=746473448#gid=746473448"
+    };
+
+    function atualizarLinkPlanilha() {
+        const id = document.getElementById('seletorContador').value;
+        const btn = document.getElementById('btnPlanilha');
+        if (id && linksPlanilhas[id]) {
+            btn.href = linksPlanilhas[id];
+            btn.style.display = "block";
+        } else {
+            btn.style.display = "none";
+        }
+    }
 
     async function importarDados() {
         const btn = document.getElementById('btnImportar');
@@ -96,7 +116,7 @@
             const text = await response.text();
             const linhas = text.split(/\r?\n/);
             
-            // Ajuste para pegar a COLUNA B (índice 1) ignorando o cabeçalho
+            // Pega a Coluna B (índice 1)
             listaCodigosValidos = linhas.map(linha => {
                 const colunas = linha.split(',');
                 return colunas[1] ? colunas[1].replace(/"/g, '').trim() : null;
@@ -111,7 +131,7 @@
                 throw new Error("Lista vazia");
             }
         } catch (error) {
-            alert("Erro na importação. Verifique se a planilha está publicada corretamente como CSV.");
+            alert("Erro na importação. Verifique se a planilha está publicada como CSV.");
             btn.disabled = false;
             btn.innerText = "📥 IMPORTAR DADOS PRÉ INVENTÁRIO";
         }
@@ -121,6 +141,7 @@
         localStorage.setItem('backup_dados_morana', JSON.stringify(dadosContados));
         localStorage.setItem('backup_total_morana', somaTotalPecas);
         localStorage.setItem('backup_log_morana', document.getElementById('log').innerHTML);
+        localStorage.setItem('backup_contador_index', document.getElementById('seletorContador').value);
     }
 
     function carregarBackup() {
@@ -140,6 +161,11 @@
                 somaTotalPecas = parseFloat(localStorage.getItem('backup_total_morana')) || 0;
                 document.getElementById('contadorTotal').innerText = somaTotalPecas;
                 document.getElementById('log').innerHTML = localStorage.getItem('backup_log_morana');
+                const contIdx = localStorage.getItem('backup_contador_index');
+                if(contIdx) {
+                    document.getElementById('seletorContador').value = contIdx;
+                    atualizarLinkPlanilha();
+                }
             }
         }
     }
@@ -202,8 +228,9 @@
     }
 
     function copiarTabela() {
+        if (dadosContados.length === 0) { alert("Nada para copiar!"); return; }
         let t = ""; dadosContados.forEach(i => { t += `${i.codigo}\t${i.quantidade}\n`; });
-        navigator.clipboard.writeText(t).then(() => { alert("Copiado!"); });
+        navigator.clipboard.writeText(t).then(() => { alert("Copiado com sucesso!"); });
     }
 </script>
 </body>

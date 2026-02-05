@@ -3,38 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contador MORANA - Oficial</title>
+    <title>Contador MORANA - Automático</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 10px; background: #f0f2f5; }
         .container { max-width: 450px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         h2 { color: #000; letter-spacing: 2px; margin-bottom: 5px; }
         .config-area { background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #ddd; }
         select { width: 100%; padding: 10px; border-radius: 8px; font-size: 16px; margin-top: 5px; border: 2px solid #343a40; }
-        .link-planilha { display: inline-block; margin-top: 12px; color: #007bff; font-weight: bold; text-decoration: underline; font-size: 14px; cursor: pointer; }
-        .btn-lista-codigos { background: #6c757d; color: white; padding: 10px; border-radius: 8px; text-decoration: none; display: block; margin: 10px 0; font-size: 13px; font-weight: bold; }
-        textarea { width: 100%; height: 60px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 14px; }
+        .import-section { margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #eee; }
+        .btn-importar { background: #28a745; color: white; width: 100%; border: none; font-size: 16px; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-importar:disabled { background: #6c757d; cursor: not-allowed; }
+        .msg-sucesso { color: #28a745; font-size: 14px; margin-top: 8px; font-weight: bold; display: none; }
         .btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         button { padding: 12px; border: 1px solid #ddd; border-radius: 10px; background: #fff; cursor: pointer; font-weight: bold; font-size: 14px; }
         button.active { background: #000; color: #fff; border-color: #000; }
         .total-panel { background: #343a40; color: #fff; padding: 15px; border-radius: 12px; margin: 15px 0; font-size: 1.2em; font-weight: bold; }
         .copy-btn { background: #007bff; color: white; width: 100%; margin-top: 10px; border: none; font-size: 16px; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .clear-btn { background: #dc3545; color: white; width: 100%; margin-top: 5px; border: none; font-size: 12px; padding: 8px; border-radius: 10px; cursor: pointer; opacity: 0.8; }
         .status { padding: 15px; margin: 10px 0; font-weight: bold; border-radius: 12px; border: 2px solid transparent; min-height: 50px; display: flex; align-items: center; justify-content: center; }
         .erro { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
         .ok { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
         .input-area { background: #eee; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
         input[type="text"], input[type="number"] { width: 100%; padding: 15px; font-size: 18px; border-radius: 10px; border: 2px solid #000; text-align: center; box-sizing: border-box; margin-top: 5px; }
-        #log { text-align: left; height: 150px; overflow-y: auto; background: #fafafa; padding: 15px; margin-top: 15px; border-radius: 10px; border: 1px solid #eee; font-size: 14px; }
+        #log { text-align: left; height: 120px; overflow-y: auto; background: #fafafa; padding: 15px; margin-top: 15px; border-radius: 10px; border: 1px solid #eee; font-size: 13px; }
         .log-erro { color: #ff0000; font-weight: bold; }
     </style>
 </head>
-<body onclick="ativarAudio()">
+<body onload="carregarTudo()" onclick="ativarAudio()">
 
 <div class="container">
     <h2>MORANA</h2>
 
+    <div class="import-section">
+        <button id="btnImportar" class="btn-importar" onclick="importarDados()">📥 IMPORTAR DADOS PRÉ INVENTÁRIO</button>
+        <div id="msgSucesso" class="msg-sucesso"></div>
+    </div>
+
     <div class="config-area">
-        <label><strong>Quem está contando agora?</strong></label>
-        <select id="seletorContador" onchange="atualizarLinkPlanilha()">
+        <label><strong>Quem está contando?</strong></label>
+        <select id="seletorContador">
             <option value="">Selecione o Contador...</option>
             <option value="1">Contador 1</option>
             <option value="2">Contador 2</option>
@@ -42,12 +49,7 @@
             <option value="4">Contador 4</option>
             <option value="5">Contador 5</option>
         </select>
-        <a id="btnPlanilha" class="link-planilha" href="#" target="_blank" style="display:none;">🔗 CLIQUE PARA ABRIR A PLANILHA</a>
     </div>
-    
-    <a href="https://docs.google.com/spreadsheets/d/1oa72j08CBUpaPS9hBlgBGQFXHI4f6ao6H_vBw8Zotug/edit?gid=0#gid=0" target="_blank" class="btn-lista-codigos">🔗 LINK LISTA CÓDIGOS</a>
-    
-    <textarea id="listaSistema" placeholder="Cole a lista do sistema aqui..." oninput="limparAutomatico()"></textarea>
     
     <div class="btn-group">
         <button onclick="setQtd(1, this)" class="active">QTD 1</button>
@@ -60,17 +62,18 @@
 
     <div class="input-area">
         <input type="number" id="qtdManual" placeholder="Quantidade manual..." style="display:none; margin-bottom: 10px;">
-        <div id="displayStatus" class="status">TOQUE NA TELA PARA SOM</div>
+        <div id="displayStatus" class="status">TOQUE NA TELA PARA ATIVAR SOM</div>
         <input type="text" id="inputBip" placeholder="BIPE O CÓDIGO" autofocus>
     </div>
 
-    <button class="copy-btn" onclick="copiarTabela()">📋 COPIAR TUDO (PARA PLANILHA)</button>
+    <button class="copy-btn" onclick="copiarTabela()">📋 COPIAR PARA PLANILHA</button>
+    <button class="clear-btn" onclick="limparTudo()">🗑️ LIMPAR TUDO / NOVO INVENTÁRIO</button>
 
     <div class="total-panel">
         TOTAL DE PEÇAS: <span id="contadorTotal">0</span>
     </div>
     
-    <div id="log"><strong>Histórico de Bips:</strong><br></div>
+    <div id="log"><strong>Histórico:</strong><br></div>
 </div>
 
 <script>
@@ -78,41 +81,90 @@
     let audioCtx = null;
     let dadosContados = [];
     let somaTotalPecas = 0;
+    let listaCodigosValidos = [];
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT-C__Ol64x9DNuRb11spJhaP30Ci18IDE0xi2cPwno0GOTuSiNsfqwKUO3JwLorLwbl6enS6MPUaM/pub?gid=0&single=true&output=csv";
 
-    const linksPlanilhas = {
-        "1": "https://docs.google.com/spreadsheets/d/1tO_fU3TcHGDpGpsU0Mhm3S5YesC60Y9HsRI6KoxzX7E/edit?gid=746473448#gid=746473448",
-        "2": "https://docs.google.com/spreadsheets/d/1JYDSjGJWQsaojPMqoT_2GH7dlzA-lbHKPLX228jF2tA/edit?gid=746473448#gid=746473448",
-        "3": "https://docs.google.com/spreadsheets/d/1KSahZxPv0z7mT6ZpY5emNTdsNtC6eUGcrDa9Dcc0pnY/edit?gid=746473448#gid=746473448",
-        "4": "https://docs.google.com/spreadsheets/d/1sTRNcC3Hi-CepA-alR24f_gOtCg_vswE2hKwSzTeHbU/edit?gid=746473448#gid=746473448",
-        "5": "https://docs.google.com/spreadsheets/d/1eOJN0ZwJ8qwfmIG-G3S7tB8sY_rGtLqclIYWlzXOblo/edit?gid=746473448#gid=746473448"
-    };
+    function carregarTudo() {
+        carregarBackup();
+    }
 
-    function atualizarLinkPlanilha() {
-        const id = document.getElementById('seletorContador').value;
-        const btn = document.getElementById('btnPlanilha');
-        if (id && linksPlanilhas[id]) {
-            btn.href = linksPlanilhas[id];
-            btn.style.display = "block";
-        } else {
-            btn.style.display = "none";
+    async function importarDados() {
+        const btn = document.getElementById('btnImportar');
+        const msg = document.getElementById('msgSucesso');
+        btn.innerText = "⏳ IMPORTANDO...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(csvUrl);
+            const data = await response.text();
+            // Limpa o CSV e pega apenas a primeira coluna (códigos)
+            listaCodigosValidos = data.split(/\r?\n/).map(line => line.split(',')[0].trim()).filter(c => c !== "" && c !== "codigo");
+            
+            msg.innerText = `${listaCodigosValidos.length} códigos importados com sucesso!`;
+            msg.style.display = "block";
+            btn.innerText = "✅ DADOS CARREGADOS";
+            localStorage.setItem('backup_lista', JSON.stringify(listaCodigosValidos));
+            document.getElementById('inputBip').focus();
+        } catch (error) {
+            alert("Erro ao importar dados. Verifique a conexão.");
+            btn.disabled = false;
+            btn.innerText = "📥 IMPORTAR DADOS PRÉ INVENTÁRIO";
         }
     }
 
-    // MELHORIA: Agora ele limpa em tempo real enquanto você cola ou digita
-    function limparAutomatico() {
-        const textarea = document.getElementById('listaSistema');
-        const originalValue = textarea.value;
-        const cleanedValue = originalValue.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "").join("\n");
-        
-        if (originalValue !== cleanedValue) {
-            textarea.value = cleanedValue;
+    function salvarBackup() {
+        localStorage.setItem('backup_dados', JSON.stringify(dadosContados));
+        localStorage.setItem('backup_total', somaTotalPecas);
+        localStorage.setItem('backup_log', document.getElementById('log').innerHTML);
+        localStorage.setItem('backup_contador', document.getElementById('seletorContador').value);
+    }
+
+    function carregarBackup() {
+        const backupDados = localStorage.getItem('backup_dados');
+        const backupLista = localStorage.getItem('backup_lista');
+
+        if (backupLista) {
+            listaCodigosValidos = JSON.parse(backupLista);
+            const btn = document.getElementById('btnImportar');
+            const msg = document.getElementById('msgSucesso');
+            btn.disabled = true;
+            btn.innerText = "✅ DADOS CARREGADOS";
+            msg.innerText = `${listaCodigosValidos.length} códigos disponíveis no cache.`;
+            msg.style.display = "block";
+        }
+
+        if (backupDados && JSON.parse(backupDados).length > 0) {
+            if (confirm("Encontrei uma contagem anterior salva. Deseja continuar?")) {
+                dadosContados = JSON.parse(backupDados);
+                somaTotalPecas = parseFloat(localStorage.getItem('backup_total')) || 0;
+                document.getElementById('contadorTotal').innerText = somaTotalPecas;
+                document.getElementById('log').innerHTML = localStorage.getItem('backup_log');
+                document.getElementById('seletorContador').value = localStorage.getItem('backup_contador') || "";
+            } else {
+                limparTudo();
+            }
+        }
+    }
+
+    function limparTudo() {
+        if (confirm("Isso apagará a contagem atual e a lista importada. Tem certeza?")) {
+            localStorage.clear();
+            dadosContados = [];
+            listaCodigosValidos = [];
+            somaTotalPecas = 0;
+            document.getElementById('contadorTotal').innerText = "0";
+            document.getElementById('log').innerHTML = "<strong>Histórico:</strong><br>";
+            document.getElementById('btnImportar').disabled = false;
+            document.getElementById('btnImportar').innerText = "📥 IMPORTAR DADOS PRÉ INVENTÁRIO";
+            document.getElementById('msgSucesso').style.display = "none";
+            document.getElementById('displayStatus').innerText = "MEMÓRIA LIMPA!";
+            document.getElementById('displayStatus').className = "status";
         }
     }
 
     function ativarAudio() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            document.getElementById('displayStatus').innerText = "SOM ATIVO! AGUARDANDO BIP...";
         }
     }
 
@@ -146,10 +198,11 @@
     });
 
     function processar(cod) {
-        const textarea = document.getElementById('listaSistema');
-        // Filtro garantido antes de cada bip
-        const lista = textarea.value.split(/\r?\n/).map(c => c.trim()).filter(c => c !== "");
-        
+        if (listaCodigosValidos.length === 0) {
+            alert("Por favor, importe os dados do pré-inventário primeiro!");
+            return;
+        }
+
         const q = (qtdAtual === 'manual') ? (parseFloat(document.getElementById('qtdManual').value) || 1) : parseFloat(qtdAtual);
         const display = document.getElementById('displayStatus');
         
@@ -157,18 +210,19 @@
         somaTotalPecas += q;
         document.getElementById('contadorTotal').innerText = somaTotalPecas;
 
-        if (lista.includes(cod)) {
+        if (listaCodigosValidos.includes(cod)) {
             display.innerText = "OK: " + cod;
             display.className = "status ok";
             document.getElementById('log').innerHTML += `<span>${cod} | Qtd: ${q}</span><br>`;
         } else {
-            display.innerText = "NÃO ENCONTRADO: " + cod;
+            display.innerText = "ERRO: " + cod;
             display.className = "status erro";
             bipErro();
             if (navigator.vibrate) navigator.vibrate(300);
             document.getElementById('log').innerHTML += `<span class="log-erro">${cod} | Qtd: ${q} (ERRO)</span><br>`;
         }
         document.getElementById('log').scrollTop = 99999;
+        salvarBackup();
     }
 
     function copiarTabela() {
@@ -176,7 +230,7 @@
         let t = "";
         dadosContados.forEach(i => { t += `${i.codigo}\t${i.quantidade}\n`; });
         navigator.clipboard.writeText(t).then(() => { 
-            alert("Sucesso! " + somaTotalPecas + " peças copiadas."); 
+            alert("Sucesso! " + somaTotalPecas + " peças copiadas para a planilha."); 
         });
     }
 </script>

@@ -22,7 +22,8 @@
         .copy-btn { background: #007bff; color: white; width: 100%; margin-top: 10px; border: none; font-size: 16px; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .clear-btn { background: #dc3545; color: white; width: 80%; margin: 10px auto; border: none; font-size: 11px; padding: 6px; border-radius: 8px; cursor: pointer; opacity: 0.7; display: block; }
         .status { padding: 15px; margin: 10px 0; font-weight: bold; border-radius: 12px; border: 2px solid transparent; min-height: 50px; display: flex; align-items: center; justify-content: center; }
-        .erro { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+        .erro { background: #ffebee; color: #c62828; border-color: #ef9a9a; animation: piscar 0.3s infinite; }
+        @keyframes piscar { 0% { background: #ffebee; } 50% { background: #ff5252; } 100% { background: #ffebee; } }
         .ok { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
         .input-area { background: #eee; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
         input[type="text"], input[type="number"] { width: 100%; padding: 15px; font-size: 18px; border-radius: 10px; border: 2px solid #000; text-align: center; box-sizing: border-box; margin-top: 5px; }
@@ -126,7 +127,6 @@
                 msg.style.display = "block";
                 btn.innerText = "✅ DADOS CARREGADOS";
                 localStorage.setItem('backup_lista_morana', JSON.stringify(listaCodigosValidos));
-                // Salva o momento da importação
                 localStorage.setItem('data_criacao_morana', Date.now());
             } else {
                 throw new Error("Lista vazia");
@@ -143,9 +143,6 @@
         localStorage.setItem('backup_total_morana', somaTotalPecas);
         localStorage.setItem('backup_log_morana', document.getElementById('log').innerHTML);
         localStorage.setItem('backup_contador_index', document.getElementById('seletorContador').value);
-        if(!localStorage.getItem('data_criacao_morana')) {
-            localStorage.setItem('data_criacao_morana', Date.now());
-        }
     }
 
     function verificarValidadeEBotarBackup() {
@@ -153,11 +150,9 @@
         if (dataCriacao) {
             const doisDiasEmMs = 2 * 24 * 60 * 60 * 1000;
             const agora = Date.now();
-            
             if (agora - dataCriacao > doisDiasEmMs) {
-                console.log("Dados expirados (mais de 2 dias). Limpando...");
                 localStorage.clear();
-                return; // Não carrega nada
+                return;
             }
         }
         carregarBackup();
@@ -169,10 +164,9 @@
             listaCodigosValidos = JSON.parse(backupLista);
             document.getElementById('btnImportar').disabled = true;
             document.getElementById('btnImportar').innerText = "✅ DADOS CARREGADOS";
-            document.getElementById('msgSucesso').innerText = `${listaCodigosValidos.length} códigos carregados do cache.`;
+            document.getElementById('msgSucesso').innerText = `${listaCodigosValidos.length} códigos no cache.`;
             document.getElementById('msgSucesso').style.display = "block";
         }
-
         const backupDados = localStorage.getItem('backup_dados_morana');
         if (backupDados && JSON.parse(backupDados).length > 0) {
             if (confirm("Continuar contagem salva?")) {
@@ -196,17 +190,28 @@
         }
     }
 
-    function ativarAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    function ativarAudio() { 
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+    }
 
+    // --- SOM DE ERRO MELHORADO: MAIS ALTO E ESTRIDENTE ---
     function bipErro() {
         if (!audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        const t = audioCtx.currentTime;
+        
+        // Toca 3 bips rápidos e altos
+        [0, 0.15, 0.3].forEach(delay => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth'; // Som mais "cortante"
+            osc.frequency.setValueAtTime(220, t + delay); // Tom mais baixo/alerta
+            gain.gain.setValueAtTime(0.5, t + delay); // Volume alto
+            gain.gain.exponentialRampToValueAtTime(0.01, t + delay + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(t + delay);
+            osc.stop(t + delay + 0.1);
+        });
     }
 
     function setQtd(v, btn) {
@@ -239,7 +244,8 @@
             document.getElementById('log').innerHTML += `<span>${cod} | Qtd: ${q}</span><br>`;
         } else {
             display.innerText = "ERRO: " + cod; display.className = "status erro";
-            bipErro(); if (navigator.vibrate) navigator.vibrate(300);
+            bipErro(); 
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]); // Vibração tripla
             document.getElementById('log').innerHTML += `<span class="log-erro">${cod} | Qtd: ${q} (ERRO)</span><br>`;
         }
         document.getElementById('log').scrollTop = 99999;
